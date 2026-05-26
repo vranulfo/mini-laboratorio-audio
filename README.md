@@ -17,4 +17,4 @@ Clone o repositório:
 ```bash
 git clone https://github.com/vranulfo/mini-laboratorio-audio.git
 cd mini-laboratorio-audio
-pip install sounddevice numpy matplotlib scipy
+pip install -r requirements.txt

@@ -7,38 +7,28 @@ from scipy.signal import butter, lfilter
 from scipy.fft import fft, fftfreq
 
 # Configurações globais
-fs = 44100  # taxa de amostragem
+fs = 44100
 audio = None
 audio_filtrado = None
 
-# Função para gravar áudio
+# Funções principais
 def gravar_audio():
     global audio
-    duracao = duracao_var.get()  # pega o valor do slider
-
-    # Criar janela modal temporária
+    duracao = duracao_var.get()
     modal = tk.Toplevel(janela)
     modal.title("Gravação em andamento")
     tk.Label(modal, text=f"Gravando áudio por {duracao} segundos...").pack(padx=20, pady=20)
-
     modal.transient(janela)
     modal.grab_set()
     janela.update()
-
-    # Gravação
     audio = sd.rec(int(duracao * fs), samplerate=fs, channels=1)
     sd.wait()
-
-    # Fecha automaticamente ao terminar
     modal.destroy()
-
-    # Mensagem rápida de conclusão
     concluido = tk.Toplevel(janela)
     concluido.title("Concluído")
     tk.Label(concluido, text="Gravação finalizada!").pack(padx=20, pady=20)
     concluido.after(1500, concluido.destroy)
 
-# Função para visualizar sinal no tempo
 def visualizar_sinal():
     if audio is None:
         messagebox.showerror("Erro", "Nenhum áudio gravado!")
@@ -50,7 +40,6 @@ def visualizar_sinal():
     plt.ylabel("Amplitude")
     plt.show()
 
-# Função para aplicar filtro passa-baixa
 def aplicar_filtro_passa_baixa():
     global audio_filtrado
     if audio is None:
@@ -66,7 +55,6 @@ def aplicar_filtro_passa_baixa():
     plt.ylabel("Amplitude")
     plt.show()
 
-# Função para FFT
 def aplicar_fft():
     if audio is None:
         messagebox.showerror("Erro", "Nenhum áudio gravado!")
@@ -81,7 +69,6 @@ def aplicar_fft():
     plt.ylabel("Magnitude")
     plt.show()
 
-# Função para espectrograma
 def mostrar_espectrograma():
     if audio is None:
         messagebox.showerror("Erro", "Nenhum áudio gravado!")
@@ -94,19 +81,6 @@ def mostrar_espectrograma():
     plt.colorbar(label="Intensidade")
     plt.show()
 
-# Função para executar processamento escolhido
-def executar():
-    escolha = opcao.get()
-    if escolha == "FFT":
-        aplicar_fft()
-    elif escolha == "Filtro":
-        aplicar_filtro_passa_baixa()
-    elif escolha == "Espectrograma":
-        mostrar_espectrograma()
-    else:
-        messagebox.showwarning("Aviso", "Selecione uma opção de processamento!")
-
-# Função para ouvir áudio original
 def ouvir_audio():
     if audio is None:
         messagebox.showerror("Erro", "Nenhum áudio gravado!")
@@ -114,7 +88,6 @@ def ouvir_audio():
     sd.play(audio.flatten(), fs)
     sd.wait()
 
-# Função para ouvir áudio filtrado
 def ouvir_audio_filtrado():
     if audio_filtrado is None:
         messagebox.showerror("Erro", "Nenhum áudio filtrado! Execute o filtro primeiro.")
@@ -125,45 +98,46 @@ def ouvir_audio_filtrado():
 # Interface gráfica
 janela = tk.Tk()
 janela.title("Mini Laboratório de Áudio em Tempo Real")
-janela.geometry("500x600")
+janela.geometry("600x600")
 
-# Variáveis globais ajustáveis
-cutoff_var = tk.IntVar(value=1000)
+style = ttk.Style()
+style.theme_use("clam")
+
+ttk.Label(janela, text="🎙️ Mini Laboratório de Áudio em Tempo Real", font=("Arial", 14, "bold")).pack(pady=10)
+
+# Frame Gravação
+frame_gravacao = ttk.LabelFrame(janela, text="Gravação")
+frame_gravacao.pack(fill="x", padx=10, pady=10)
+
 duracao_var = tk.IntVar(value=3)
-
-ttk.Label(janela, text="Mini Laboratório de Áudio em Tempo Real", font=("Arial", 12, "bold")).pack(pady=10)
-
-# Slider de duração da gravação
-def atualizar_duracao(val):
-    duracao_label.config(text=f"{int(float(val))} s")
-
-ttk.Label(janela, text="Duração da Gravação (s)").pack()
-duracao_slider = ttk.Scale(janela, from_=1, to=10, orient="horizontal", variable=duracao_var, command=atualizar_duracao)
+def atualizar_duracao(val): duracao_label.config(text=f"{int(float(val))} s")
+ttk.Label(frame_gravacao, text="Duração da Gravação (s)").pack()
+duracao_slider = ttk.Scale(frame_gravacao, from_=1, to=10, orient="horizontal", variable=duracao_var, command=atualizar_duracao)
 duracao_slider.pack(pady=5)
-duracao_label = ttk.Label(janela, text=f"{duracao_var.get()} s")
+duracao_label = ttk.Label(frame_gravacao, text=f"{duracao_var.get()} s")
 duracao_label.pack()
+ttk.Button(frame_gravacao, text="🎙️ Gravar Áudio", command=gravar_audio).pack(pady=5)
+ttk.Button(frame_gravacao, text="🎧 Ouvir Áudio Gravado", command=ouvir_audio).pack(pady=5)
 
-ttk.Button(janela, text="Gravar Áudio", command=gravar_audio).pack(pady=5)
-ttk.Button(janela, text="Ouvir Áudio Gravado", command=ouvir_audio).pack(pady=5)
-ttk.Button(janela, text="Visualizar Sinal no Tempo", command=visualizar_sinal).pack(pady=5)
+# Frame Processamento
+frame_proc = ttk.LabelFrame(janela, text="Processamento")
+frame_proc.pack(fill="x", padx=10, pady=10)
 
-# Slider de frequência de corte
-def atualizar_cutoff(val):
-    cutoff_label.config(text=f"{int(float(val))} Hz")
-
-ttk.Label(janela, text="Frequência de Corte (Hz)").pack()
-cutoff_slider = ttk.Scale(janela, from_=100, to=5000, orient="horizontal", variable=cutoff_var, command=atualizar_cutoff)
+cutoff_var = tk.IntVar(value=1000)
+def atualizar_cutoff(val): cutoff_label.config(text=f"{int(float(val))} Hz")
+ttk.Label(frame_proc, text="Frequência de Corte (Hz)").pack()
+cutoff_slider = ttk.Scale(frame_proc, from_=100, to=5000, orient="horizontal", variable=cutoff_var, command=atualizar_cutoff)
 cutoff_slider.pack(pady=5)
-cutoff_label = ttk.Label(janela, text=f"{cutoff_var.get()} Hz")
+cutoff_label = ttk.Label(frame_proc, text=f"{cutoff_var.get()} Hz")
 cutoff_label.pack()
 
-ttk.Label(janela, text="Processamento:", font=("Arial", 10, "bold")).pack(pady=10)
-opcao = tk.StringVar()
-ttk.Radiobutton(janela, text="FFT", variable=opcao, value="FFT").pack()
-ttk.Radiobutton(janela, text="Aplicar Filtro - Passa Baixa", variable=opcao, value="Filtro").pack()
-ttk.Radiobutton(janela, text="Mostrar Espectrograma", variable=opcao, value="Espectrograma").pack()
+ttk.Button(frame_proc, text="📊 Mostrar FFT", command=aplicar_fft).pack(pady=5)
+ttk.Button(frame_proc, text="🔉 Aplicar Filtro Passa-Baixa", command=aplicar_filtro_passa_baixa).pack(pady=5)
+ttk.Button(frame_proc, text="🌈 Mostrar Espectrograma", command=mostrar_espectrograma).pack(pady=5)
 
-ttk.Button(janela, text="Executar Resultados", command=executar).pack(pady=15)
-ttk.Button(janela, text="Ouvir Áudio Filtrado", command=ouvir_audio_filtrado).pack(pady=5)
+# Frame Audição
+frame_audicao = ttk.LabelFrame(janela, text="Audição")
+frame_audicao.pack(fill="x", padx=10, pady=10)
+ttk.Button(frame_audicao, text="🎧 Ouvir Áudio Filtrado", command=ouvir_audio_filtrado).pack(pady=5)
 
 janela.mainloop()

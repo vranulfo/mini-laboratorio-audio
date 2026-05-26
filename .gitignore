@@ -1,0 +1,6 @@
+# Arquivos e pastas para ignorar
+*.spec
+build/
+dist/
+__pycache__/
+*.pyc
