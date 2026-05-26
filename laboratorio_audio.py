@@ -5,8 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import butter, lfilter
 from scipy.fft import fft, fftfreq
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-# Configurações globais
 fs = 44100
 audio = None
 audio_filtrado = None
@@ -24,21 +24,18 @@ def gravar_audio():
     audio = sd.rec(int(duracao * fs), samplerate=fs, channels=1)
     sd.wait()
     modal.destroy()
-    concluido = tk.Toplevel(janela)
-    concluido.title("Concluído")
-    tk.Label(concluido, text="Gravação finalizada!").pack(padx=20, pady=20)
-    concluido.after(1500, concluido.destroy)
+    messagebox.showinfo("Concluído", "Gravação finalizada!")
 
 def visualizar_sinal():
     if audio is None:
         messagebox.showerror("Erro", "Nenhum áudio gravado!")
         return
-    plt.figure("Sinal no Tempo")
-    plt.plot(audio)
-    plt.title("Sinal no Tempo")
-    plt.xlabel("Amostras")
-    plt.ylabel("Amplitude")
-    plt.show()
+    fig, ax = plt.subplots(figsize=(5,3))
+    ax.plot(audio)
+    ax.set_title("Sinal no Tempo")
+    ax.set_xlabel("Amostras")
+    ax.set_ylabel("Amplitude")
+    mostrar_grafico(fig)
 
 def aplicar_filtro_passa_baixa():
     global audio_filtrado
@@ -48,12 +45,12 @@ def aplicar_filtro_passa_baixa():
     cutoff = cutoff_var.get()
     b, a = butter(6, cutoff / (fs / 2), btype='low')
     audio_filtrado = lfilter(b, a, audio.flatten())
-    plt.figure("Áudio Filtrado - Passa Baixa")
-    plt.plot(audio_filtrado)
-    plt.title(f"Áudio Filtrado - Passa Baixa (corte {cutoff} Hz)")
-    plt.xlabel("Amostras")
-    plt.ylabel("Amplitude")
-    plt.show()
+    fig, ax = plt.subplots(figsize=(5,3))
+    ax.plot(audio_filtrado)
+    ax.set_title(f"Áudio Filtrado - Passa Baixa ({cutoff} Hz)")
+    ax.set_xlabel("Amostras")
+    ax.set_ylabel("Amplitude")
+    mostrar_grafico(fig)
 
 def aplicar_fft():
     if audio is None:
@@ -62,24 +59,23 @@ def aplicar_fft():
     N = len(audio)
     yf = fft(audio.flatten())
     xf = fftfreq(N, 1/fs)
-    plt.figure("FFT do Áudio")
-    plt.plot(xf[:N//2], np.abs(yf[:N//2]))
-    plt.title("FFT do Áudio")
-    plt.xlabel("Frequência (Hz)")
-    plt.ylabel("Magnitude")
-    plt.show()
+    fig, ax = plt.subplots(figsize=(5,3))
+    ax.plot(xf[:N//2], np.abs(yf[:N//2]))
+    ax.set_title("FFT do Áudio")
+    ax.set_xlabel("Frequência (Hz)")
+    ax.set_ylabel("Magnitude")
+    mostrar_grafico(fig)
 
 def mostrar_espectrograma():
     if audio is None:
         messagebox.showerror("Erro", "Nenhum áudio gravado!")
         return
-    plt.figure("Espectrograma")
-    plt.specgram(audio.flatten(), Fs=fs, cmap='viridis')
-    plt.title("Espectrograma do Áudio")
-    plt.xlabel("Tempo (s)")
-    plt.ylabel("Frequência (Hz)")
-    plt.colorbar(label="Intensidade")
-    plt.show()
+    fig, ax = plt.subplots(figsize=(5,3))
+    ax.specgram(audio.flatten(), Fs=fs, cmap='viridis')
+    ax.set_title("Espectrograma do Áudio")
+    ax.set_xlabel("Tempo (s)")
+    ax.set_ylabel("Frequência (Hz)")
+    mostrar_grafico(fig)
 
 def ouvir_audio():
     if audio is None:
@@ -95,49 +91,66 @@ def ouvir_audio_filtrado():
     sd.play(audio_filtrado, fs)
     sd.wait()
 
+# Função para mostrar gráfico na coluna da direita
+def mostrar_grafico(fig):
+    for widget in frame_resultados.winfo_children():
+        widget.destroy()
+    canvas = FigureCanvasTkAgg(fig, master=frame_resultados)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill="both", expand=True)
+
 # Interface gráfica
 janela = tk.Tk()
 janela.title("Mini Laboratório de Áudio em Tempo Real")
-janela.geometry("600x600")
+janela.geometry("1000x600")
 
-style = ttk.Style()
-style.theme_use("clam")
+# Configuração grid
+janela.columnconfigure(0, weight=1)
+janela.columnconfigure(1, weight=2)
+janela.rowconfigure(0, weight=1)
 
-ttk.Label(janela, text="🎙️ Mini Laboratório de Áudio em Tempo Real", font=("Arial", 14, "bold")).pack(pady=10)
+# Coluna esquerda (Laboratório)
+frame_lab = ttk.Frame(janela)
+frame_lab.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-# Frame Gravação
-frame_gravacao = ttk.LabelFrame(janela, text="Gravação")
-frame_gravacao.pack(fill="x", padx=10, pady=10)
+ttk.Label(frame_lab, text="🎙️ Laboratório de Áudio", font=("Arial", 14, "bold")).pack(pady=10)
 
+# Gravação
 duracao_var = tk.IntVar(value=3)
-def atualizar_duracao(val): duracao_label.config(text=f"{int(float(val))} s")
-ttk.Label(frame_gravacao, text="Duração da Gravação (s)").pack()
-duracao_slider = ttk.Scale(frame_gravacao, from_=1, to=10, orient="horizontal", variable=duracao_var, command=atualizar_duracao)
+def atualizar_duracao(val):
+    duracao_label.config(text=f"{int(float(val))} s")
+
+ttk.Label(frame_lab, text="Duração da Gravação (s)").pack()
+duracao_slider = ttk.Scale(frame_lab, from_=1, to=10, orient="horizontal",
+                           variable=duracao_var, command=atualizar_duracao)
 duracao_slider.pack(pady=5)
-duracao_label = ttk.Label(frame_gravacao, text=f"{duracao_var.get()} s")
+duracao_label = ttk.Label(frame_lab, text=f"{duracao_var.get()} s")
 duracao_label.pack()
-ttk.Button(frame_gravacao, text="🎙️ Gravar Áudio", command=gravar_audio).pack(pady=5)
-ttk.Button(frame_gravacao, text="🎧 Ouvir Áudio Gravado", command=ouvir_audio).pack(pady=5)
 
-# Frame Processamento
-frame_proc = ttk.LabelFrame(janela, text="Processamento")
-frame_proc.pack(fill="x", padx=10, pady=10)
+ttk.Button(frame_lab, text="🎙️ Gravar Áudio", command=gravar_audio).pack(pady=5)
+ttk.Button(frame_lab, text="🎧 Ouvir Áudio Gravado", command=ouvir_audio).pack(pady=5)
 
+# Processamento
 cutoff_var = tk.IntVar(value=1000)
-def atualizar_cutoff(val): cutoff_label.config(text=f"{int(float(val))} Hz")
-ttk.Label(frame_proc, text="Frequência de Corte (Hz)").pack()
-cutoff_slider = ttk.Scale(frame_proc, from_=100, to=5000, orient="horizontal", variable=cutoff_var, command=atualizar_cutoff)
+def atualizar_cutoff(val):
+    cutoff_label.config(text=f"{int(float(val))} Hz")
+
+ttk.Label(frame_lab, text="Frequência de Corte (Hz)").pack()
+cutoff_slider = ttk.Scale(frame_lab, from_=100, to=5000, orient="horizontal",
+                          variable=cutoff_var, command=atualizar_cutoff)
 cutoff_slider.pack(pady=5)
-cutoff_label = ttk.Label(frame_proc, text=f"{cutoff_var.get()} Hz")
+cutoff_label = ttk.Label(frame_lab, text=f"{cutoff_var.get()} Hz")
 cutoff_label.pack()
 
-ttk.Button(frame_proc, text="📊 Mostrar FFT", command=aplicar_fft).pack(pady=5)
-ttk.Button(frame_proc, text="🔉 Aplicar Filtro Passa-Baixa", command=aplicar_filtro_passa_baixa).pack(pady=5)
-ttk.Button(frame_proc, text="🌈 Mostrar Espectrograma", command=mostrar_espectrograma).pack(pady=5)
+ttk.Button(frame_lab, text="📊 Mostrar FFT", command=aplicar_fft).pack(pady=5)
+ttk.Button(frame_lab, text="🔉 Aplicar Filtro Passa-Baixa", command=aplicar_filtro_passa_baixa).pack(pady=5)
+ttk.Button(frame_lab, text="🌈 Mostrar Espectrograma", command=mostrar_espectrograma).pack(pady=5)
 
-# Frame Audição
-frame_audicao = ttk.LabelFrame(janela, text="Audição")
-frame_audicao.pack(fill="x", padx=10, pady=10)
-ttk.Button(frame_audicao, text="🎧 Ouvir Áudio Filtrado", command=ouvir_audio_filtrado).pack(pady=5)
+# Audição
+ttk.Button(frame_lab, text="🎧 Ouvir Áudio Filtrado", command=ouvir_audio_filtrado).pack(pady=5)
+
+# Coluna direita (Resultados)
+frame_resultados = ttk.LabelFrame(janela, text="Resultados")
+frame_resultados.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
 
 janela.mainloop()
