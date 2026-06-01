@@ -26,17 +26,6 @@ def gravar_audio():
     modal.destroy()
     messagebox.showinfo("Concluído", "Gravação finalizada!")
 
-def visualizar_sinal():
-    if audio is None:
-        messagebox.showerror("Erro", "Nenhum áudio gravado!")
-        return
-    fig, ax = plt.subplots(figsize=(5,3))
-    ax.plot(audio)
-    ax.set_title("Sinal no Tempo")
-    ax.set_xlabel("Amostras")
-    ax.set_ylabel("Amplitude")
-    mostrar_grafico(fig)
-
 def aplicar_filtro_passa_baixa():
     global audio_filtrado
     if audio is None:
@@ -104,6 +93,29 @@ janela = tk.Tk()
 janela.title("Mini Laboratório de Áudio em Tempo Real")
 janela.geometry("1000x600")
 
+# Estilo ttk
+style = ttk.Style()
+style.theme_use("clam")
+
+style.configure("TButton",
+                font=("Arial", 11, "bold"),
+                foreground="white",
+                background="#4CAF50",
+                padding=6)
+style.map("TButton",
+          background=[("active", "#45a049")])
+
+style.configure("Record.TButton", background="#e74c3c", foreground="white")
+style.map("Record.TButton", background=[("active", "#c0392b")])
+
+style.configure("Play.TButton", background="#3498db", foreground="white")
+style.map("Play.TButton", background=[("active", "#2980b9")])
+
+style.configure("TLabelframe", background="#f9f9f9")
+style.configure("TLabelframe.Label", font=("Arial", 12, "bold"), foreground="#333")
+
+style.configure("TLabel", font=("Arial", 11), foreground="#222")
+
 # Configuração grid
 janela.columnconfigure(0, weight=1)
 janela.columnconfigure(1, weight=2)
@@ -127,8 +139,8 @@ duracao_slider.pack(pady=5)
 duracao_label = ttk.Label(frame_lab, text=f"{duracao_var.get()} s")
 duracao_label.pack()
 
-ttk.Button(frame_lab, text="🎙️ Gravar Áudio", command=gravar_audio).pack(pady=5)
-ttk.Button(frame_lab, text="🎧 Ouvir Áudio Gravado", command=ouvir_audio).pack(pady=5)
+ttk.Button(frame_lab, text="🎙️ Gravar Áudio", style="Record.TButton", command=gravar_audio).pack(pady=5)
+ttk.Button(frame_lab, text="🎧 Ouvir Áudio Gravado", style="Play.TButton", command=ouvir_audio).pack(pady=5)
 
 # Processamento
 cutoff_var = tk.IntVar(value=1000)
@@ -147,7 +159,7 @@ ttk.Button(frame_lab, text="🔉 Aplicar Filtro Passa-Baixa", command=aplicar_fi
 ttk.Button(frame_lab, text="🌈 Mostrar Espectrograma", command=mostrar_espectrograma).pack(pady=5)
 
 # Audição
-ttk.Button(frame_lab, text="🎧 Ouvir Áudio Filtrado", command=ouvir_audio_filtrado).pack(pady=5)
+ttk.Button(frame_lab, text="🎧 Ouvir Áudio Filtrado", style="Play.TButton", command=ouvir_audio_filtrado).pack(pady=5)
 
 # Coluna direita (Resultados)
 frame_resultados = ttk.LabelFrame(janela, text="Resultados")
